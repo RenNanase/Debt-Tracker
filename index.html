@@ -1,0 +1,3579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#007aff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Debt Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <style>html, body { background: #f5f5f7; margin: 0; } #app-loader { position: fixed; inset: 0; z-index: 9999; background: #f5f5f7; } #app:not(.app--ready) { visibility: hidden; }</style>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f5f7;
+      --card: #ffffff;
+      --primary: #007aff;
+      --primary-dark: #0062cc;
+      --danger: #ff3b30;
+      --success: #34c759;
+      --text: #1d1d1f;
+      --text-secondary: #86868b;
+      --border: #e5e5ea;
+      --radius: 16px;
+      --radius-sm: 12px;
+      --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      padding: 16px;
+      padding-bottom: 100px;
+    }
+
+    @media (min-width: 768px) {
+      .container { max-width: 600px; margin: 0 auto; }
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .header__title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .header__tagline {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+
+    /* Segmented control */
+    .segmented-control {
+      display: flex;
+      background: var(--border);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 2px;
+    }
+
+    .segmented-control__btn {
+      flex: 1;
+      min-height: 44px;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .segmented-control__btn:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+
+    .segmented-control__btn--active {
+      background: var(--card);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .segmented-control__btn:active {
+      transform: scale(0.98);
+    }
+
+    /* Dashboard */
+    .dashboard {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .dashboard__card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .dashboard__card--wide {
+      grid-column: 1 / -1;
+    }
+
+    .dashboard__card--next-payment {
+      background: rgba(255, 59, 48, 0.08);
+      border: 1px solid rgba(255, 59, 48, 0.22);
+      box-shadow: 0 2px 14px rgba(255, 59, 48, 0.12);
+    }
+
+    .dashboard__card--next-payment .dashboard__label {
+      color: var(--danger);
+      font-weight: 600;
+    }
+
+    .dashboard__card--next-payment .dashboard__value {
+      color: var(--danger);
+    }
+
+    .dashboard__card--next-payment .dashboard__subvalue {
+      color: rgba(255, 59, 48, 0.8);
+    }
+
+    .dashboard__label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+
+    .dashboard__value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .dashboard__value--danger { color: var(--danger); }
+    .dashboard__value--primary { color: var(--primary); font-size: 1.125rem; }
+
+    .dashboard__subvalue {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    /* Group headers */
+    .group-header {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 20px 0 10px;
+      padding-left: 4px;
+    }
+
+    .group-header:first-child { margin-top: 0; }
+
+    /* Debt cards */
+    .debt-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      border: none;
+      width: 100%;
+      text-align: left;
+      font-family: inherit;
+      color: inherit;
+      transition: transform 0.15s;
+    }
+
+    .debt-card:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+
+    .debt-card:active { transform: scale(0.98); }
+
+    .debt-card__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .debt-card__name {
+      font-size: 1.0625rem;
+      font-weight: 600;
+    }
+
+    .debt-card__type {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+
+    .debt-card__balance {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--danger);
+    }
+
+    .debt-card__meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    /* Due date items */
+    .due-item {
+      background: var(--card);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border: none;
+      width: 100%;
+      text-align: left;
+      font-family: inherit;
+      color: inherit;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+
+    .due-item:active {
+      transform: scale(0.995);
+    }
+
+    .due-item--selected {
+      background: rgba(52, 199, 89, 0.08);
+      box-shadow: inset 0 0 0 2px rgba(52, 199, 89, 0.35);
+    }
+
+    .due-item__info { flex: 1; min-width: 0; }
+
+    .due-item__name {
+      font-weight: 600;
+      font-size: 0.9375rem;
+    }
+
+    .due-item__type {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .due-item__amount {
+      font-weight: 700;
+      color: var(--danger);
+      font-size: 1rem;
+      white-space: nowrap;
+    }
+
+    .due-item__tick {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: transparent;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+
+    .due-item--selected .due-item__tick {
+      background: var(--success);
+      border-color: var(--success);
+      color: #ffffff;
+    }
+
+    .due-item--overdue {
+      border-left: 3px solid var(--danger);
+    }
+
+    .due-selection-bar {
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+      z-index: 90;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--card);
+      border-radius: var(--radius-sm);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.14);
+      animation: update-banner-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .due-selection-bar[hidden] {
+      display: none !important;
+    }
+
+    .due-selection-bar__info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .due-selection-bar__count {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+
+    .due-selection-bar__total {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--success);
+      letter-spacing: -0.02em;
+    }
+
+    .due-selection-bar__clear {
+      border: none;
+      background: var(--bg);
+      color: var(--text-secondary);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      font-family: inherit;
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      flex-shrink: 0;
+      min-height: 40px;
+    }
+
+    @media (min-width: 768px) {
+      .due-selection-bar {
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        width: min(568px, calc(100vw - 32px));
+      }
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-secondary);
+    }
+
+    .empty-state__icon { font-size: 3rem; margin-bottom: 12px; }
+    .empty-state__text { font-size: 1rem; margin-bottom: 8px; }
+
+    /* FAB */
+    .fab {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 28px;
+      padding: 14px 28px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(0, 122, 255, 0.4);
+      min-height: 44px;
+      min-width: 160px;
+      z-index: 100;
+      font-family: inherit;
+      transition: transform 0.15s, background 0.2s;
+    }
+
+    .fab:hover { background: var(--primary-dark); }
+    .fab:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+    .fab:active { transform: translateX(-50%) scale(0.96); }
+
+    @media (min-width: 768px) {
+      .fab { left: auto; right: calc(50% - 300px + 16px); transform: none; }
+      .fab:active { transform: scale(0.96); }
+    }
+
+    /* Modals */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .modal--open { display: flex; }
+
+    @media (min-width: 768px) {
+      .modal { align-items: center; }
+    }
+
+    .modal__backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+    }
+
+    .modal__content {
+      position: relative;
+      background: var(--card);
+      border-radius: var(--radius) var(--radius) 0 0;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 24px;
+      z-index: 1;
+      animation: slideUp 0.3s ease;
+    }
+
+    @media (min-width: 768px) {
+      .modal__content {
+        border-radius: var(--radius);
+        max-width: 480px;
+        max-height: 85vh;
+      }
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal__title {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .modal__close {
+      background: var(--bg);
+      border: none;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      font-size: 1.25rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+    }
+
+    .modal__close:focus-visible {
+      outline: 2px solid var(--primary);
+    }
+
+    .modal__close:active { transform: scale(0.95); }
+
+    /* Forms */
+    .form-group { margin-bottom: 16px; }
+
+    .form-group label {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      font-family: inherit;
+      background: var(--bg);
+      min-height: 44px;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: 2px solid var(--primary);
+      border-color: var(--primary);
+    }
+
+    /* Installments in form */
+    .installment-list { margin-bottom: 12px; }
+
+    .installment-item {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+      padding: 10px;
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+    }
+
+    .installment-item--paid { opacity: 0.6; }
+
+    .installment-item input[type="date"],
+    .installment-item input[type="number"] {
+      flex: 1;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-family: inherit;
+      min-height: 40px;
+      background: var(--card);
+    }
+
+    .installment-item__remove {
+      background: none;
+      border: none;
+      color: var(--danger);
+      font-size: 1.25rem;
+      cursor: pointer;
+      min-width: 44px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .installment-item__remove:focus-visible {
+      outline: 2px solid var(--danger);
+      border-radius: 8px;
+    }
+
+    .btn-add-installment {
+      width: 100%;
+      padding: 12px;
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--primary);
+      font-size: 0.9375rem;
+      font-weight: 500;
+      cursor: pointer;
+      min-height: 44px;
+      font-family: inherit;
+    }
+
+    .btn-add-installment:focus-visible {
+      outline: 2px solid var(--primary);
+    }
+
+    .btn-add-installment:active { transform: scale(0.98); }
+
+    /* Modal actions */
+    .modal__actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      min-height: 44px;
+      font-family: inherit;
+      transition: transform 0.15s;
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+
+    .btn:active { transform: scale(0.98); }
+
+    .btn--primary { background: var(--primary); color: white; }
+    .btn--primary:hover { background: var(--primary-dark); }
+    .btn--secondary { background: var(--bg); color: var(--text); }
+    .btn--danger { background: var(--danger); color: white; }
+
+    .btn--danger-outline {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid var(--danger);
+      margin-top: 12px;
+      width: 100%;
+    }
+
+    /* Detail modal installments */
+    .detail-installment {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+    }
+
+    .detail-installment--paid {
+      opacity: 0.55;
+    }
+
+    .detail-installment--overdue {
+      border-left: 3px solid var(--danger);
+    }
+
+    .detail-installment__month {
+      flex: 1;
+      font-weight: 500;
+    }
+
+    .detail-installment__amount {
+      font-weight: 600;
+      color: var(--danger);
+    }
+
+    .detail-installment__paid-label {
+      font-size: 0.8125rem;
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    .detail-installment input[type="checkbox"] {
+      width: 24px;
+      height: 24px;
+      accent-color: var(--success);
+      cursor: pointer;
+    }
+
+    .dashboard__value--warning { color: #ff9500; font-size: 1.125rem; }
+
+    .warning-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: #fff3e0;
+      color: #e65100;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    .payday-banner {
+      background: #fff3e0;
+      border: 1px solid #ffcc80;
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      font-size: 0.875rem;
+      color: #e65100;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .payday-banner__count {
+      font-weight: 700;
+    }
+
+    .debt-card__tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .due-item__tags {
+      margin-top: 4px;
+    }
+
+    .detail-installment__date-row {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Delete modal */
+    .delete-modal__text {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      line-height: 1.6;
+    }
+
+    .delete-modal__name {
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* Main navigation */
+    .main-nav {
+      display: flex;
+      background: var(--border);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 2px;
+      margin-bottom: 16px;
+    }
+
+    .main-nav__btn {
+      flex: 1;
+      min-height: 44px;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .main-nav__btn:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+
+    .main-nav__btn--active {
+      background: var(--card);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .main-nav__btn:active { transform: scale(0.98); }
+
+    .view-section { display: none; }
+    .view-section--active { display: block; }
+
+    /* Notes */
+    .note-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      border: none;
+      width: 100%;
+      text-align: left;
+      font-family: inherit;
+      color: inherit;
+      transition: transform 0.15s;
+    }
+
+    .note-card:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+
+    .note-card:active { transform: scale(0.98); }
+
+    .note-card__title {
+      font-size: 1.0625rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .note-card__preview {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .note-card__date {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .form-group textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      font-family: inherit;
+      background: var(--bg);
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .form-group textarea:focus {
+      outline: 2px solid var(--primary);
+      border-color: var(--primary);
+    }
+
+    .detail-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .detail-actions .btn--danger-outline {
+      margin-top: 0;
+    }
+
+    .form-error {
+      display: none;
+      background: #ffebee;
+      color: var(--danger);
+      border: 1px solid #ffcdd2;
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 0.875rem;
+      margin-bottom: 16px;
+      line-height: 1.4;
+    }
+
+    .form-error--visible { display: block; }
+
+    .overdue-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: #ffebee;
+      color: var(--danger);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    .overdue-banner {
+      background: #ffebee;
+      border: 1px solid #ffcdd2;
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      font-size: 0.875rem;
+      color: var(--danger);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .overdue-banner__count { font-weight: 700; }
+
+    .dashboard__value--success { color: var(--success); font-size: 1.125rem; }
+
+    /* Settings */
+    .settings-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+    }
+
+    .settings-card__title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .settings-card__desc {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .settings-card__meta {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .settings-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .settings-row .form-group {
+      flex: 1;
+      margin-bottom: 0;
+    }
+
+    .settings-row .btn {
+      flex: 0 0 auto;
+      min-width: 100px;
+    }
+
+    .fixed-preview {
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-top: 12px;
+      line-height: 1.5;
+    }
+
+    .fixed-preview__total {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--danger);
+      margin-top: 4px;
+    }
+
+    .installment-summary {
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-top: 12px;
+      line-height: 1.5;
+    }
+
+    .installment-summary__row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .installment-summary__status--match {
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    .installment-summary__status--over {
+      color: var(--danger);
+      font-weight: 600;
+    }
+
+    .installment-summary__status--remaining {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .installment-item input[readonly] {
+      pointer-events: none;
+      opacity: 0.85;
+      background: var(--bg);
+    }
+
+    .form-group input[readonly] {
+      background: var(--bg);
+      color: var(--text-secondary);
+    }
+
+    /* Settled history — pink theme */
+    :root {
+      --history-pink: #ff2d55;
+      --history-pink-dark: #d42347;
+      --history-pink-bg: #fff0f5;
+      --history-pink-border: #ffc2d4;
+    }
+
+    .history-header {
+      margin-bottom: 16px;
+    }
+
+    .history-header__title {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--history-pink);
+      margin-bottom: 4px;
+    }
+
+    .history-header__desc {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+
+    .history-card {
+      background: var(--history-pink-bg);
+      border: 1px solid var(--history-pink-border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 12px rgba(255, 45, 85, 0.1);
+      cursor: pointer;
+      border-left: 4px solid var(--history-pink);
+      width: 100%;
+      text-align: left;
+      font-family: inherit;
+      color: inherit;
+      transition: transform 0.15s;
+    }
+
+    .history-card:focus-visible {
+      outline: 2px solid var(--history-pink);
+      outline-offset: 2px;
+    }
+
+    .history-card:active { transform: scale(0.98); }
+
+    .history-card__badge {
+      display: inline-block;
+      background: var(--history-pink);
+      color: white;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      letter-spacing: 0.02em;
+    }
+
+    .history-card__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .history-card__name {
+      font-size: 1.0625rem;
+      font-weight: 600;
+    }
+
+    .history-card__type {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+
+    .history-card__amount {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--history-pink);
+    }
+
+    .history-card__meta {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+
+    .detail-settled-badge {
+      display: inline-block;
+      background: var(--history-pink-bg);
+      color: var(--history-pink);
+      border: 1px solid var(--history-pink-border);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+
+    .update-banner {
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+      z-index: 150;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: rgba(29, 29, 31, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: var(--radius-sm);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+      animation: update-banner-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .update-banner--visible {
+      display: flex;
+    }
+
+    .update-banner__text {
+      flex: 1;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #ffffff;
+      line-height: 1.35;
+    }
+
+    .update-banner__actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .update-banner__btn {
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      min-height: 36px;
+    }
+
+    .update-banner__btn--primary {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .update-banner__btn--primary:active {
+      background: var(--primary-dark);
+    }
+
+    .update-banner__btn--secondary {
+      background: rgba(255, 255, 255, 0.12);
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    @keyframes update-banner-in {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (min-width: 768px) {
+      .update-banner {
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        width: min(568px, calc(100vw - 32px));
+      }
+
+      @keyframes update-banner-in {
+        from {
+          opacity: 0;
+          transform: translateX(-50%) translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+      }
+    }
+
+    #app-loader {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 20% 18%, rgba(0, 122, 255, 0.08), transparent 42%),
+        radial-gradient(circle at 82% 76%, rgba(52, 199, 89, 0.06), transparent 40%),
+        #f5f5f7;
+      transition: opacity 0.45s ease, visibility 0.45s ease;
+    }
+
+    #app-loader.app-loader--hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .app-loader__orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(48px);
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    .app-loader__orb--1 {
+      width: 220px;
+      height: 220px;
+      top: 18%;
+      left: -40px;
+      background: rgba(0, 122, 255, 0.18);
+      animation: app-loader-float 7s ease-in-out infinite;
+    }
+
+    .app-loader__orb--2 {
+      width: 180px;
+      height: 180px;
+      right: -30px;
+      bottom: 16%;
+      background: rgba(52, 199, 89, 0.14);
+      animation: app-loader-float 8s ease-in-out infinite reverse;
+    }
+
+    .app-loader__content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      text-align: center;
+      animation: app-loader-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .app-loader__ring {
+      width: 56px;
+      height: 56px;
+    }
+
+    .app-loader__ring-track {
+      fill: none;
+      stroke: rgba(0, 122, 255, 0.12);
+      stroke-width: 2.5;
+    }
+
+    .app-loader__ring-arc {
+      fill: none;
+      stroke: url(#app-loader-gradient);
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-dasharray: 88 160;
+      transform-origin: center;
+      animation: app-loader-spin 1.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+    }
+
+    .app-loader__title {
+      font-size: 1.375rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.03em;
+    }
+
+    .app-loader__tagline {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .app-loader__dots {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      height: 8px;
+    }
+
+    .app-loader__dots span {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--primary);
+      opacity: 0.35;
+      animation: app-loader-dot 1.2s ease-in-out infinite;
+    }
+
+    .app-loader__dots span:nth-child(2) { animation-delay: 0.15s; }
+    .app-loader__dots span:nth-child(3) { animation-delay: 0.3s; }
+
+    .app-loader__line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 2px;
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .app-loader__line span {
+      display: block;
+      width: 0;
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), #5ac8fa);
+      transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    @keyframes app-loader-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes app-loader-float {
+      0%, 100% { transform: translate3d(0, 0, 0); }
+      50% { transform: translate3d(0, -14px, 0); }
+    }
+
+    @keyframes app-loader-rise {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes app-loader-dot {
+      0%, 80%, 100% {
+        opacity: 0.28;
+        transform: scale(0.85);
+      }
+      40% {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app-loader" aria-live="polite" aria-label="Loading Debt Tracker">
+    <div class="app-loader__orb app-loader__orb--1" aria-hidden="true"></div>
+    <div class="app-loader__orb app-loader__orb--2" aria-hidden="true"></div>
+    <div class="app-loader__content">
+      <svg class="app-loader__ring" viewBox="0 0 56 56" aria-hidden="true">
+        <defs>
+          <linearGradient id="app-loader-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#007aff"/>
+            <stop offset="100%" stop-color="#5ac8fa"/>
+          </linearGradient>
+        </defs>
+        <circle class="app-loader__ring-track" cx="28" cy="28" r="22"/>
+        <circle class="app-loader__ring-arc" cx="28" cy="28" r="22"/>
+      </svg>
+      <p class="app-loader__title">Debt Tracker</p>
+      <p class="app-loader__tagline">Track · Pay · Free</p>
+      <div class="app-loader__dots" aria-hidden="true">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+    <div class="app-loader__line" aria-hidden="true">
+      <span id="app-loader-progress"></span>
+    </div>
+  </div>
+  <div id="app" aria-hidden="true">
+    <div class="container">
+      <header class="header">
+        <h1 class="header__title">Debt Tracker</h1>
+        <p class="header__tagline">Know your debt. Track every payment. See your freedom date.</p>
+        <nav class="main-nav" aria-label="Main navigation">
+          <button type="button" class="main-nav__btn main-nav__btn--active" id="nav-debts-btn">Debts</button>
+          <button type="button" class="main-nav__btn" id="nav-history-btn">History</button>
+          <button type="button" class="main-nav__btn" id="nav-notes-btn">Notes</button>
+          <button type="button" class="main-nav__btn" id="nav-settings-btn">Settings</button>
+        </nav>
+        <div class="segmented-control" id="grouping-control" role="tablist" aria-label="Grouping mode">
+          <button type="button" class="segmented-control__btn segmented-control__btn--active" id="group-type-btn" role="tab" aria-selected="true">By Type</button>
+          <button type="button" class="segmented-control__btn" id="group-duedate-btn" role="tab" aria-selected="false">By Due Date</button>
+        </div>
+      </header>
+
+      <main>
+        <div class="view-section view-section--active" id="debts-view">
+          <section class="dashboard" id="dashboard" aria-label="Dashboard statistics"></section>
+          <section id="debt-list" aria-label="Debt list"></section>
+          <div class="due-selection-bar" id="due-selection-bar" hidden aria-live="polite">
+            <div class="due-selection-bar__info">
+              <span class="due-selection-bar__count" id="due-selection-count">0 selected</span>
+              <span class="due-selection-bar__total" id="due-selection-total">RM0</span>
+            </div>
+            <button type="button" class="due-selection-bar__clear" id="clear-due-selection-btn">Clear</button>
+          </div>
+        </div>
+        <div class="view-section" id="history-view">
+          <section id="history-list" aria-label="Settled debt history"></section>
+        </div>
+        <div class="view-section" id="notes-view">
+          <section id="notes-list" aria-label="Notes list"></section>
+        </div>
+        <div class="view-section" id="settings-view">
+          <section id="settings-content" aria-label="Settings"></section>
+        </div>
+      </main>
+    </div>
+
+    <button type="button" class="fab" id="fab-btn" aria-label="Add new item">+ Add Debt</button>
+
+    <div class="update-banner" id="update-banner" role="status" aria-live="polite">
+      <p class="update-banner__text">Update available — your data stays safe.</p>
+      <div class="update-banner__actions">
+        <button type="button" class="update-banner__btn update-banner__btn--secondary" id="dismiss-update-btn">Later</button>
+        <button type="button" class="update-banner__btn update-banner__btn--primary" id="apply-update-btn">Update</button>
+      </div>
+    </div>
+
+    <!-- Add/Edit Debt Modal -->
+    <div class="modal" id="debt-modal" role="dialog" aria-modal="true" aria-labelledby="debt-modal-title">
+      <div class="modal__backdrop" data-close-modal="debt-modal"></div>
+      <div class="modal__content">
+        <div class="modal__header">
+          <h2 class="modal__title" id="debt-modal-title">Add Debt</h2>
+          <button type="button" class="modal__close" data-close-modal="debt-modal" aria-label="Close">&times;</button>
+        </div>
+        <form id="debt-form">
+          <div class="form-error" id="debt-form-error" role="alert"></div>
+          <div class="form-group">
+            <label for="debt-name">Debt Name</label>
+            <input type="text" id="debt-name" name="name" placeholder="e.g. Phone Loan" required>
+          </div>
+          <div class="form-group">
+            <label for="debt-type">Type</label>
+            <select id="debt-type" name="type"></select>
+          </div>
+          <div class="form-group">
+            <label>Payment Plan</label>
+            <div class="segmented-control" id="installment-mode-control" role="tablist" aria-label="Payment plan type">
+              <button type="button" class="segmented-control__btn segmented-control__btn--active" id="mode-custom-btn" role="tab" aria-selected="true">Custom</button>
+              <button type="button" class="segmented-control__btn" id="mode-fixed-btn" role="tab" aria-selected="false">Fixed</button>
+            </div>
+          </div>
+          <div id="fixed-installment-fields" style="display:none">
+            <div class="form-group">
+              <label for="fixed-months">Duration (months)</label>
+              <input type="number" id="fixed-months" min="1" step="1" placeholder="e.g. 60">
+            </div>
+            <div class="form-group">
+              <label for="fixed-monthly">Monthly amount</label>
+              <input type="number" id="fixed-monthly" min="0.01" step="0.01" placeholder="e.g. 7000">
+            </div>
+            <div class="form-group">
+              <label for="fixed-start">First payment date</label>
+              <input type="date" id="fixed-start">
+            </div>
+            <div class="fixed-preview" id="fixed-preview">Enter duration and monthly amount to preview.</div>
+          </div>
+          <div class="form-group">
+            <label for="debt-total">Total Amount</label>
+            <input type="number" id="debt-total" name="totalAmount" min="0" step="0.01" placeholder="0.00">
+          </div>
+          <div id="custom-installment-fields">
+            <div class="form-group">
+              <label>Installments</label>
+              <div class="installment-list" id="form-installments"></div>
+              <button type="button" class="btn-add-installment" id="add-installment-btn">+ Add Installment</button>
+              <div class="installment-summary" id="custom-installment-summary" aria-live="polite"></div>
+            </div>
+          </div>
+          <div class="form-group" id="fixed-installment-preview-group" style="display:none">
+            <label>Generated schedule</label>
+            <div class="installment-list" id="fixed-installments-preview"></div>
+          </div>
+          <div class="modal__actions">
+            <button type="button" class="btn btn--secondary" data-close-modal="debt-modal">Cancel</button>
+            <button type="submit" class="btn btn--primary" id="save-debt-btn">Save Debt</button>
+          </div>
+          <button type="button" class="btn btn--danger-outline" id="delete-debt-btn" style="display:none">Delete Debt</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Debt Detail Modal -->
+    <div class="modal" id="detail-modal" role="dialog" aria-modal="true" aria-labelledby="detail-modal-title">
+      <div class="modal__backdrop" data-close-modal="detail-modal"></div>
+      <div class="modal__content">
+        <div class="modal__header">
+          <h2 class="modal__title" id="detail-modal-title">Debt Details</h2>
+          <button type="button" class="modal__close" data-close-modal="detail-modal" aria-label="Close">&times;</button>
+        </div>
+        <div id="detail-content"></div>
+        <div class="detail-actions">
+          <div class="modal__actions" style="margin-top:0">
+            <button type="button" class="btn btn--secondary" id="edit-from-detail-btn">Edit Debt</button>
+            <button type="button" class="btn btn--primary" data-close-modal="detail-modal">Done</button>
+          </div>
+          <button type="button" class="btn btn--danger-outline" id="delete-from-detail-btn">Delete Debt</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Note Modal -->
+    <div class="modal" id="note-modal" role="dialog" aria-modal="true" aria-labelledby="note-modal-title">
+      <div class="modal__backdrop" data-close-modal="note-modal"></div>
+      <div class="modal__content">
+        <div class="modal__header">
+          <h2 class="modal__title" id="note-modal-title">Add Note</h2>
+          <button type="button" class="modal__close" data-close-modal="note-modal" aria-label="Close">&times;</button>
+        </div>
+        <form id="note-form">
+          <div class="form-error" id="note-form-error" role="alert"></div>
+          <div class="form-group">
+            <label for="note-title">Title</label>
+            <input type="text" id="note-title" name="title" placeholder="e.g. Payment reminder" required>
+          </div>
+          <div class="form-group">
+            <label for="note-content">Note</label>
+            <textarea id="note-content" name="content" placeholder="Write your note here..." required></textarea>
+          </div>
+          <div class="modal__actions">
+            <button type="button" class="btn btn--secondary" data-close-modal="note-modal">Cancel</button>
+            <button type="submit" class="btn btn--primary">Save Note</button>
+          </div>
+          <button type="button" class="btn btn--danger-outline" id="delete-note-btn" style="display:none">Delete Note</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal" id="delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+      <div class="modal__backdrop" data-close-modal="delete-modal"></div>
+      <div class="modal__content">
+        <div class="modal__header">
+          <h2 class="modal__title" id="delete-modal-title">Delete?</h2>
+          <button type="button" class="modal__close" data-close-modal="delete-modal" aria-label="Close">&times;</button>
+        </div>
+        <p class="delete-modal__text" id="delete-modal-text">Are you sure you want to delete <span class="delete-modal__name" id="delete-item-name"></span>? This cannot be undone.</p>
+        <div class="modal__actions">
+          <button type="button" class="btn btn--secondary" data-close-modal="delete-modal">Cancel</button>
+          <button type="button" class="btn btn--danger" id="confirm-delete-btn">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========== DATA MODELS ==========
+    const DEBT_TYPES = [
+      { value: "credit-card", label: "💳 Credit Card" },
+      { value: "loan", label: "💰 Loan" },
+      { value: "friend", label: "👥 Friend/Family" },
+      { value: "bill", label: "📄 Bill" },
+      { value: "BNPL", label: "💳 BNPL" },
+      { value: "other", label: "📦 Other" }
+    ];
+
+    const TYPE_ORDER = ["credit-card", "loan", "friend", "bill", "BNPL", "other"];
+    const APP_VERSION = "1.8.0";
+    const STORAGE_VERSION_KEY = "debt_tracker_version";
+    const DEFAULT_PAYDAY = 22;
+    const FIXED_TERM_MONTHS = [6, 9, 12, 18, 24, 30, 36, 42, 48, 58, 60];
+
+    function generateId() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+
+    const DEFAULT_INSTALLMENT = {
+      date: "",
+      amount: 0,
+      paid: false
+    };
+
+    function createDefaultDebt() {
+      return {
+        id: generateId(),
+        name: "",
+        type: "other",
+        totalAmount: 0,
+        installments: [],
+        settledAt: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+    }
+
+    function createDefaultNote() {
+      return {
+        id: generateId(),
+        title: "",
+        content: "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+    }
+
+    let debts = [];
+    let notes = [];
+    let payday = DEFAULT_PAYDAY;
+    let currentView = "debts";
+    let groupingMode = "type";
+    let selectedDueItems = {};
+    let editingDebtId = null;
+    let editingNoteId = null;
+    let detailDebtId = null;
+    let deleteTarget = null;
+    let formInstallments = [];
+    let installmentMode = "custom";
+
+    // ========== STORAGE FUNCTIONS ==========
+    function saveAppData() {
+      try {
+        localStorage.setItem('debt_tracker_data', JSON.stringify({
+          debts: debts,
+          notes: notes,
+          payday: payday,
+          groupingMode: groupingMode,
+          currentView: currentView,
+          lastUpdated: new Date().toISOString()
+        }));
+        localStorage.setItem(STORAGE_VERSION_KEY, APP_VERSION);
+      } catch (e) {
+        console.error("Storage failed:", e);
+        alert("Storage failed — app may not work properly");
+      }
+    }
+
+    function saveDebts() {
+      saveAppData();
+    }
+
+    function saveNotes() {
+      saveAppData();
+    }
+
+    function loadDebts() {
+      const saved = localStorage.getItem('debt_tracker_data');
+      if (saved) {
+        const data = JSON.parse(saved);
+        debts = data.debts || [];
+        notes = data.notes || [];
+        payday = data.payday || DEFAULT_PAYDAY;
+        groupingMode = data.groupingMode || "type";
+        currentView = data.currentView || "debts";
+      } else {
+        debts = [];
+        notes = [];
+        payday = DEFAULT_PAYDAY;
+        groupingMode = "type";
+        currentView = "debts";
+      }
+
+      const beforeCount = debts.length;
+      debts = debts.filter(function(d) { return !String(d.id).startsWith("sample-"); });
+      localStorage.removeItem('debt_tracker_sample_loaded');
+
+      const storedVersion = localStorage.getItem(STORAGE_VERSION_KEY) || "0";
+      let needsSave = debts.length !== beforeCount;
+
+      if (runMigrations(storedVersion)) {
+        needsSave = true;
+      }
+
+      if (needsSave) {
+        saveDebts();
+      }
+    }
+
+    function compareVersions(a, b) {
+      const pa = a.split(".").map(Number);
+      const pb = b.split(".").map(Number);
+      for (let i = 0; i < 3; i++) {
+        const av = pa[i] || 0;
+        const bv = pb[i] || 0;
+        if (av < bv) return -1;
+        if (av > bv) return 1;
+      }
+      return 0;
+    }
+
+    function runMigrations(fromVersion) {
+      let changed = false;
+
+      if (compareVersions(fromVersion, "1.1.0") < 0) {
+        if (migrateInstallmentDates()) changed = true;
+      }
+
+      if (compareVersions(fromVersion, "1.3.0") < 0) {
+        if (!payday || payday < 1 || payday > 31) {
+          payday = DEFAULT_PAYDAY;
+          changed = true;
+        }
+      }
+
+      if (compareVersions(fromVersion, "1.5.0") < 0) {
+        if (migrateSettledDebts()) changed = true;
+      }
+
+      localStorage.setItem(STORAGE_VERSION_KEY, APP_VERSION);
+      return changed;
+    }
+
+    function getDueItemKey(debtId, installmentIndex) {
+      return debtId + ":" + installmentIndex;
+    }
+
+    function toggleDueItemSelection(debtId, installmentIndex, amount) {
+      const key = getDueItemKey(debtId, installmentIndex);
+      if (selectedDueItems[key]) {
+        delete selectedDueItems[key];
+      } else {
+        selectedDueItems[key] = amount;
+      }
+      updateDueSelectionBar();
+    }
+
+    function clearDueItemSelection() {
+      selectedDueItems = {};
+      updateDueSelectionBar();
+      if (groupingMode === "dueDate") {
+        renderDebtList();
+      }
+    }
+
+    function calculateSelectedDueTotal() {
+      return roundMoney(Object.keys(selectedDueItems).reduce(function(sum, key) {
+        return sum + (selectedDueItems[key] || 0);
+      }, 0));
+    }
+
+    function pruneSelectedDueItems() {
+      let changed = false;
+      Object.keys(selectedDueItems).forEach(function(key) {
+        const sep = key.lastIndexOf(":");
+        const debtId = key.slice(0, sep);
+        const installmentIndex = parseInt(key.slice(sep + 1), 10);
+        const debt = debts.find(function(d) { return d.id === debtId; });
+        const inst = debt && debt.installments[installmentIndex];
+        if (!debt || !inst || inst.paid) {
+          delete selectedDueItems[key];
+          changed = true;
+        }
+      });
+      return changed;
+    }
+
+    function updateDueSelectionBar() {
+      const bar = document.getElementById("due-selection-bar");
+      if (!bar) return;
+
+      if (groupingMode !== "dueDate") {
+        bar.hidden = true;
+        return;
+      }
+
+      const count = Object.keys(selectedDueItems).length;
+      if (count === 0) {
+        bar.hidden = true;
+        return;
+      }
+
+      bar.hidden = false;
+      document.getElementById("due-selection-count").textContent =
+        count + (count === 1 ? " payment selected" : " payments selected");
+      document.getElementById("due-selection-total").textContent = formatCurrency(calculateSelectedDueTotal());
+    }
+
+    function isDebtSettled(debt) {
+      return !!debt.settledAt;
+    }
+
+    function getActiveDebts() {
+      return debts.filter(function(d) { return !isDebtSettled(d); });
+    }
+
+    function getSettledDebts() {
+      return debts.filter(function(d) { return isDebtSettled(d); })
+        .sort(function(a, b) { return new Date(b.settledAt) - new Date(a.settledAt); });
+    }
+
+    function updateDebtSettlementStatus(debt) {
+      if (debt.installments.length > 0 && calculateRemainingBalance(debt) === 0) {
+        if (!debt.settledAt) {
+          debt.settledAt = new Date().toISOString();
+        }
+      } else {
+        debt.settledAt = null;
+      }
+    }
+
+    function migrateSettledDebts() {
+      let changed = false;
+      debts.forEach(function(debt) {
+        if (debt.settledAt === undefined) {
+          debt.settledAt = null;
+          changed = true;
+        }
+        const before = debt.settledAt;
+        updateDebtSettlementStatus(debt);
+        if (before !== debt.settledAt) changed = true;
+      });
+      return changed;
+    }
+
+    function calculateTotalPaid(debt) {
+      return debt.installments.reduce(function(sum, inst) {
+        return sum + inst.amount;
+      }, 0);
+    }
+
+    function migrateInstallmentDates() {
+      let changed = false;
+      debts.forEach(function(debt) {
+        debt.installments.forEach(function(inst) {
+          if (!inst.date && inst.month) {
+            inst.date = inst.month.length === 7 ? inst.month + "-01" : inst.month;
+            delete inst.month;
+            changed = true;
+          }
+        });
+      });
+      return changed;
+    }
+
+    function getInstallmentDate(inst) {
+      return inst.date || inst.month || "";
+    }
+
+    function parseInstallmentDate(dateStr) {
+      if (!dateStr) return null;
+      const parts = dateStr.split("-");
+      if (parts.length === 3) {
+        return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      }
+      if (parts.length === 2) {
+        return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, 1);
+      }
+      return null;
+    }
+
+    function formatInstallmentDate(dateStr) {
+      const d = parseInstallmentDate(dateStr);
+      if (!d) return dateStr || "";
+      const day = String(d.getDate()).padStart(2, "0");
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      return day + "-" + month + "-" + d.getFullYear();
+    }
+
+    function formatInstallmentDateShort(dateStr) {
+      const d = parseInstallmentDate(dateStr);
+      if (!d) return dateStr || "";
+      return d.toLocaleDateString("en-MY", { day: "numeric", month: "short", year: "numeric" });
+    }
+
+    function getOrdinal(n) {
+      const s = ["th", "st", "nd", "rd"];
+      const v = n % 100;
+      return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    }
+
+    function startOfDay(date) {
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    }
+
+    function isDueBeforePayday(dateStr) {
+      const d = parseInstallmentDate(dateStr);
+      if (!d) return false;
+      return d.getDate() < payday;
+    }
+
+    function isInCurrentMonth(dateStr) {
+      const d = parseInstallmentDate(dateStr);
+      if (!d) return false;
+      const now = new Date();
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    }
+
+    function isCurrentMonthBeforePayday(dateStr) {
+      return isInCurrentMonth(dateStr) && isDueBeforePayday(dateStr);
+    }
+
+    function isOverdue(dateStr) {
+      const d = parseInstallmentDate(dateStr);
+      if (!d) return false;
+      return startOfDay(d) < startOfDay(new Date());
+    }
+
+    function renderWarningTag() {
+      return '<span class="warning-tag">⚠ Before ' + getOrdinal(payday) + '</span>';
+    }
+
+    function renderOverdueTag() {
+      return '<span class="overdue-tag">● Overdue</span>';
+    }
+
+    function renderInstallmentTags(dueDate, paid) {
+      if (paid || !dueDate) return "";
+      let tags = "";
+      if (isOverdue(dueDate)) tags += renderOverdueTag();
+      if (isCurrentMonthBeforePayday(dueDate)) tags += renderWarningTag();
+      return tags ? '<span style="display:inline-flex;flex-wrap:wrap;gap:4px">' + tags + '</span>' : "";
+    }
+
+    function debtHasBeforePaydayWarning(debt) {
+      return debt.installments.some(function(inst) {
+        return !inst.paid && isCurrentMonthBeforePayday(getInstallmentDate(inst));
+      });
+    }
+
+    function debtHasOverdue(debt) {
+      return debt.installments.some(function(inst) {
+        return !inst.paid && isOverdue(getInstallmentDate(inst));
+      });
+    }
+
+    function countUnpaidBeforePayday() {
+      let count = 0;
+      getActiveDebts().forEach(function(debt) {
+        debt.installments.forEach(function(inst) {
+          if (!inst.paid && isCurrentMonthBeforePayday(getInstallmentDate(inst))) {
+            count++;
+          }
+        });
+      });
+      return count;
+    }
+
+    function countOverdue() {
+      let count = 0;
+      getActiveDebts().forEach(function(debt) {
+        debt.installments.forEach(function(inst) {
+          if (!inst.paid && isOverdue(getInstallmentDate(inst))) {
+            count++;
+          }
+        });
+      });
+      return count;
+    }
+
+    // ========== CALCULATION FUNCTIONS ==========
+    function calculateRemainingBalance(debt) {
+      return debt.installments
+        .filter(function(inst) { return !inst.paid; })
+        .reduce(function(sum, inst) { return sum + inst.amount; }, 0);
+    }
+
+    function getDebtTotalAmount(debt) {
+      if (debt.totalAmount > 0) return debt.totalAmount;
+      return calculateInstallmentsTotal(debt.installments);
+    }
+
+    function compareDebtsByTotalAmount(a, b) {
+      return getDebtTotalAmount(a) - getDebtTotalAmount(b);
+    }
+
+    function calculateTotalRemaining() {
+      return getActiveDebts().reduce(function(sum, debt) {
+        return sum + calculateRemainingBalance(debt);
+      }, 0);
+    }
+
+    function calculateCurrentMonthDue() {
+      const now = new Date();
+      return getActiveDebts().reduce(function(sum, debt) {
+        return sum + debt.installments.reduce(function(s, inst) {
+          if (inst.paid) return s;
+          const d = parseInstallmentDate(getInstallmentDate(inst));
+          if (!d) return s;
+          if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) {
+            return s + inst.amount;
+          }
+          return s;
+        }, 0);
+      }, 0);
+    }
+
+    function calculateLastPaymentDate(debt) {
+      const unpaid = debt.installments
+        .filter(function(inst) { return !inst.paid; })
+        .map(function(inst) { return getInstallmentDate(inst); })
+        .filter(function(d) { return d; })
+        .sort();
+
+      if (unpaid.length === 0) return null;
+      return unpaid[unpaid.length - 1];
+    }
+
+    function getNextPaymentDate() {
+      const dates = [];
+      getActiveDebts().forEach(function(debt) {
+        debt.installments.forEach(function(inst) {
+          if (!inst.paid && getInstallmentDate(inst)) {
+            dates.push(getInstallmentDate(inst));
+          }
+        });
+      });
+      dates.sort();
+      return dates.length > 0 ? dates[0] : null;
+    }
+
+    function getNextPaymentAmount() {
+      const nextDate = getNextPaymentDate();
+      if (!nextDate) return 0;
+
+      let amount = 0;
+      getActiveDebts().forEach(function(debt) {
+        debt.installments.forEach(function(inst) {
+          if (!inst.paid && getInstallmentDate(inst) === nextDate) {
+            amount += inst.amount;
+          }
+        });
+      });
+      return roundMoney(amount);
+    }
+
+    function getNextPaymentForDebt(debt) {
+      const dates = debt.installments
+        .filter(function(inst) { return !inst.paid; })
+        .map(function(inst) { return getInstallmentDate(inst); })
+        .filter(function(d) { return d; })
+        .sort();
+      return dates.length > 0 ? dates[0] : null;
+    }
+
+    function getNextPaymentAmountForDebt(debt) {
+      const nextDate = getNextPaymentForDebt(debt);
+      if (!nextDate) return 0;
+
+      return roundMoney(debt.installments.reduce(function(sum, inst) {
+        if (!inst.paid && getInstallmentDate(inst) === nextDate) {
+          return sum + inst.amount;
+        }
+        return sum;
+      }, 0));
+    }
+
+    function getActiveDebtsCount() {
+      return getActiveDebts().filter(function(debt) {
+        return calculateRemainingBalance(debt) > 0;
+      }).length;
+    }
+
+    function getDebtFreeDate() {
+      const lastDates = getActiveDebts()
+        .map(calculateLastPaymentDate)
+        .filter(function(d) { return d !== null; })
+        .sort();
+
+      if (lastDates.length === 0) return null;
+      return lastDates[lastDates.length - 1];
+    }
+
+    function hasDuplicateInstallmentDates(installments) {
+      const seen = {};
+      for (let i = 0; i < installments.length; i++) {
+        const date = getInstallmentDate(installments[i]);
+        if (!date) continue;
+        if (seen[date]) return true;
+        seen[date] = true;
+      }
+      return false;
+    }
+
+    function showFormError(elementId, message) {
+      const el = document.getElementById(elementId);
+      el.textContent = message;
+      el.classList.add("form-error--visible");
+    }
+
+    function clearFormError(elementId) {
+      const el = document.getElementById(elementId);
+      el.textContent = "";
+      el.classList.remove("form-error--visible");
+    }
+
+    function formatDateForInput(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return y + "-" + m + "-" + d;
+    }
+
+    function dateWithDay(year, month, day) {
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      return new Date(year, month, Math.min(day, daysInMonth));
+    }
+
+    function getDefaultFirstPaymentDate() {
+      const now = new Date();
+      let d = dateWithDay(now.getFullYear(), now.getMonth(), payday);
+      if (startOfDay(d) < startOfDay(now)) {
+        d = dateWithDay(now.getFullYear(), now.getMonth() + 1, payday);
+      }
+      return formatDateForInput(d);
+    }
+
+    function generateFixedInstallments(months, monthlyAmount, startDateStr) {
+      const count = months;
+      const start = parseInstallmentDate(startDateStr);
+      if (!start || monthlyAmount <= 0 || !months) return [];
+
+      const installments = [];
+      const paymentDay = start.getDate();
+
+      for (let i = 0; i < count; i++) {
+        const d = dateWithDay(start.getFullYear(), start.getMonth() + i, paymentDay);
+        installments.push({
+          date: formatDateForInput(d),
+          amount: monthlyAmount,
+          paid: false
+        });
+      }
+      return installments;
+    }
+
+    function getCustomStartDate(installments) {
+      for (let i = 0; i < installments.length; i++) {
+        const d = parseInstallmentDate(getInstallmentDate(installments[i]));
+        if (d) return d;
+      }
+      return null;
+    }
+
+    function regenerateCustomDatesFromFirst(installments) {
+      if (installments.length === 0) return;
+
+      const firstDate = parseInstallmentDate(getInstallmentDate(installments[0]));
+      if (!firstDate) {
+        for (let i = 1; i < installments.length; i++) {
+          installments[i].date = "";
+        }
+        return;
+      }
+
+      const paymentDay = firstDate.getDate();
+      for (let i = 1; i < installments.length; i++) {
+        const d = dateWithDay(firstDate.getFullYear(), firstDate.getMonth() + i, paymentDay);
+        installments[i].date = formatDateForInput(d);
+      }
+    }
+
+    function getNextCustomDate(installments) {
+      const start = getCustomStartDate(installments);
+      if (!start) return "";
+
+      const paymentDay = start.getDate();
+      const d = dateWithDay(start.getFullYear(), start.getMonth() + installments.length, paymentDay);
+      return formatDateForInput(d);
+    }
+
+    function setInstallmentMode(mode) {
+      installmentMode = mode;
+      const isFixed = mode === "fixed";
+
+      document.getElementById("mode-custom-btn").classList.toggle("segmented-control__btn--active", !isFixed);
+      document.getElementById("mode-fixed-btn").classList.toggle("segmented-control__btn--active", isFixed);
+      document.getElementById("mode-custom-btn").setAttribute("aria-selected", !isFixed ? "true" : "false");
+      document.getElementById("mode-fixed-btn").setAttribute("aria-selected", isFixed ? "true" : "false");
+
+      document.getElementById("fixed-installment-fields").style.display = isFixed ? "block" : "none";
+      document.getElementById("custom-installment-fields").style.display = isFixed ? "none" : "block";
+      document.getElementById("fixed-installment-preview-group").style.display = isFixed ? "block" : "none";
+
+      const totalInput = document.getElementById("debt-total");
+      totalInput.readOnly = isFixed;
+      if (!isFixed) {
+        totalInput.placeholder = "0.00";
+      }
+
+      if (isFixed) {
+        if (!document.getElementById("fixed-start").value) {
+          document.getElementById("fixed-start").value = getDefaultFirstPaymentDate();
+        }
+        document.getElementById("form-installments").innerHTML = "";
+        updateFixedPlan();
+      } else {
+        updateCustomInstallmentSummary();
+      }
+    }
+
+    function updateFixedPlan() {
+      if (installmentMode !== "fixed") return;
+
+      const months = parseInt(document.getElementById("fixed-months").value, 10);
+      const monthly = parseFloat(document.getElementById("fixed-monthly").value) || 0;
+      const start = document.getElementById("fixed-start").value;
+      const count = months;
+      const total = monthly * count;
+      const previewEl = document.getElementById("fixed-preview");
+
+      document.getElementById("debt-total").value = total > 0 ? total : "";
+
+      if (monthly > 0 && start && months) {
+        formInstallments = generateFixedInstallments(months, monthly, start);
+        previewEl.innerHTML =
+          count + " monthly payments × " + formatCurrency(monthly) +
+          '<div class="fixed-preview__total">Total: ' + formatCurrency(total) + '</div>';
+        renderFixedInstallmentsPreview();
+      } else {
+        formInstallments = [];
+        previewEl.textContent = "Enter duration and monthly amount to preview.";
+        document.getElementById("fixed-installments-preview").innerHTML = "";
+      }
+    }
+
+    function renderFixedInstallmentsPreview() {
+      const container = document.getElementById("fixed-installments-preview");
+      const showCount = Math.min(formInstallments.length, 3);
+
+      if (formInstallments.length === 0) {
+        container.innerHTML = "";
+        return;
+      }
+
+      let html = formInstallments.slice(0, showCount).map(function(inst, index) {
+        return (
+          '<div class="installment-item installment-item--readonly">' +
+            '<input type="date" value="' + inst.date + '" readonly tabindex="-1" aria-label="Payment ' + (index + 1) + ' date">' +
+            '<input type="number" value="' + inst.amount + '" readonly tabindex="-1" aria-label="Payment ' + (index + 1) + ' amount">' +
+          '</div>'
+        );
+      }).join("");
+
+      if (formInstallments.length > showCount) {
+        html += '<p style="font-size:0.8125rem;color:var(--text-secondary);padding:8px 4px">… and ' +
+          (formInstallments.length - showCount) + ' more payments</p>';
+      }
+
+      container.innerHTML = html;
+    }
+
+    function formatCurrency(amount) {
+      return "RM" + amount.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    }
+
+    function roundMoney(amount) {
+      return Math.round(amount * 100) / 100;
+    }
+
+    function moneyEquals(a, b) {
+      return roundMoney(a) === roundMoney(b);
+    }
+
+    function calculateInstallmentsTotal(installments) {
+      return roundMoney(installments.reduce(function(sum, inst) {
+        return sum + (parseFloat(inst.amount) || 0);
+      }, 0));
+    }
+
+    function getCustomInstallmentsTotalFromForm() {
+      let total = 0;
+      document.querySelectorAll("#form-installments input[data-field='amount']").forEach(function(input) {
+        total += parseFloat(input.value) || 0;
+      });
+      return roundMoney(total);
+    }
+
+    function getFormInstallmentsFromDom() {
+      const rows = document.querySelectorAll("#form-installments .installment-item");
+      return Array.from(rows).map(function(row, index) {
+        const inst = formInstallments[index] || { paid: false };
+        const dateInput = row.querySelector('input[data-field="date"]');
+        const amountInput = row.querySelector('input[data-field="amount"]');
+        return {
+          date: dateInput ? dateInput.value : (inst.date || inst.month || ""),
+          amount: amountInput ? (parseFloat(amountInput.value) || 0) : (parseFloat(inst.amount) || 0),
+          paid: !!inst.paid
+        };
+      });
+    }
+
+    function getDebtFormInstallments() {
+      if (installmentMode === "fixed" && !editingDebtId) {
+        return formInstallments.map(function(inst) {
+          return {
+            date: inst.date || inst.month || "",
+            amount: parseFloat(inst.amount) || 0,
+            paid: !!inst.paid
+          };
+        });
+      }
+      return getFormInstallmentsFromDom();
+    }
+
+    function syncDebtTotalForEdit(installments, storedTotal) {
+      const installmentsTotal = calculateInstallmentsTotal(installments);
+      if (storedTotal > 0 && moneyEquals(storedTotal, installmentsTotal)) {
+        return storedTotal;
+      }
+      return installmentsTotal > 0 ? installmentsTotal : (storedTotal || 0);
+    }
+
+    function updateCustomInstallmentSummary() {
+      const summaryEl = document.getElementById("custom-installment-summary");
+      if (!summaryEl) return;
+
+      if (installmentMode !== "custom") {
+        summaryEl.style.display = "none";
+        summaryEl.innerHTML = "";
+        return;
+      }
+
+      summaryEl.style.display = "block";
+      const totalAmount = parseFloat(document.getElementById("debt-total").value) || 0;
+      const installmentsTotal = getCustomInstallmentsTotalFromForm();
+      const difference = roundMoney(totalAmount - installmentsTotal);
+
+      if (totalAmount <= 0) {
+        summaryEl.innerHTML =
+          '<div class="installment-summary__row">' +
+            '<span>Installments total</span>' +
+            '<span>' + formatCurrency(installmentsTotal) + '</span>' +
+          '</div>' +
+          '<div style="margin-top:4px">Enter a total amount to check your payment plan.</div>';
+        return;
+      }
+
+      let statusHtml;
+      if (moneyEquals(installmentsTotal, totalAmount)) {
+        statusHtml = '<span class="installment-summary__status--match">Totals match</span>';
+      } else if (difference < 0) {
+        statusHtml = '<span class="installment-summary__status--over">' + formatCurrency(Math.abs(difference)) + ' over</span>';
+      } else {
+        statusHtml = '<span class="installment-summary__status--remaining">' + formatCurrency(difference) + ' remaining</span>';
+      }
+
+      summaryEl.innerHTML =
+        '<div class="installment-summary__row">' +
+          '<span>Installments total</span>' +
+          '<span>' + formatCurrency(installmentsTotal) + ' / ' + formatCurrency(totalAmount) + '</span>' +
+        '</div>' +
+        '<div class="installment-summary__row" style="margin-top:4px">' +
+          '<span>Status</span>' +
+          statusHtml +
+        '</div>';
+    }
+
+    function getDebtTypeLabel(type) {
+      const found = DEBT_TYPES.find(function(t) { return t.value === type; });
+      return found ? found.label : type;
+    }
+
+    function groupByType(debtList) {
+      const groups = {};
+      TYPE_ORDER.forEach(function(type) {
+        groups[type] = [];
+      });
+
+      debtList.forEach(function(debt) {
+        if (groups[debt.type]) {
+          groups[debt.type].push(debt);
+        } else {
+          groups.other = groups.other || [];
+          groups.other.push(debt);
+        }
+      });
+
+      return TYPE_ORDER
+        .filter(function(type) { return groups[type] && groups[type].length > 0; })
+        .map(function(type) {
+          return {
+            key: type,
+            label: getDebtTypeLabel(type),
+            debts: groups[type].slice().sort(compareDebtsByTotalAmount)
+          };
+        });
+    }
+
+    function groupByDueDate(debtList) {
+      const dateMap = {};
+
+      debtList.forEach(function(debt) {
+        debt.installments.forEach(function(inst, index) {
+          const dueDate = getInstallmentDate(inst);
+          if (!inst.paid && dueDate) {
+            if (!dateMap[dueDate]) {
+              dateMap[dueDate] = [];
+            }
+            dateMap[dueDate].push({
+              debt: debt,
+              installment: inst,
+              installmentIndex: index
+            });
+          }
+        });
+      });
+
+      return Object.keys(dateMap)
+        .sort()
+        .map(function(dueDate) {
+          return {
+            key: dueDate,
+            label: formatInstallmentDateShort(dueDate),
+            beforePayday: isCurrentMonthBeforePayday(dueDate),
+            overdue: isOverdue(dueDate),
+            items: dateMap[dueDate].slice().sort(function(a, b) {
+              return compareDebtsByTotalAmount(a.debt, b.debt);
+            })
+          };
+        });
+    }
+
+    // ========== VALIDATION ==========
+    function validateDebt(debt, errorElementId, options) {
+      options = options || {};
+      clearFormError(errorElementId);
+
+      if (!debt.name || debt.name.trim() === "") {
+        showFormError(errorElementId, "Please enter a debt name.");
+        return false;
+      }
+      if (debt.installments.length === 0) {
+        showFormError(errorElementId, "Please add at least one installment.");
+        return false;
+      }
+      for (const inst of debt.installments) {
+        if (!getInstallmentDate(inst)) {
+          showFormError(errorElementId, "Please select a due date for each installment.");
+          return false;
+        }
+        if (inst.amount <= 0) {
+          showFormError(errorElementId, "Please enter a valid amount (> 0) for each installment.");
+          return false;
+        }
+      }
+      if (hasDuplicateInstallmentDates(debt.installments)) {
+        showFormError(errorElementId, "Each installment must have a unique due date.");
+        return false;
+      }
+      if (options.requireTotalMatch) {
+        if (!debt.totalAmount || debt.totalAmount <= 0) {
+          showFormError(errorElementId, "Please enter a total amount.");
+          return false;
+        }
+        const installmentsTotal = calculateInstallmentsTotal(debt.installments);
+        if (!moneyEquals(installmentsTotal, debt.totalAmount)) {
+          showFormError(
+            errorElementId,
+            "Installment total (" + formatCurrency(installmentsTotal) + ") must match total amount (" + formatCurrency(debt.totalAmount) + ")."
+          );
+          return false;
+        }
+      }
+      return true;
+    }
+
+    // ========== CRUD OPERATIONS ==========
+    function markInstallmentPaid(debtId, installmentIndex) {
+      const debt = debts.find(function(d) { return d.id === debtId; });
+      if (!debt || !debt.installments[installmentIndex]) return;
+      if (isDebtSettled(debt)) return;
+
+      const wasSettled = isDebtSettled(debt);
+      debt.installments[installmentIndex].paid = !debt.installments[installmentIndex].paid;
+      debt.updatedAt = new Date().toISOString();
+      updateDebtSettlementStatus(debt);
+      saveDebts();
+
+      const nowSettled = isDebtSettled(debt);
+      const detailModal = document.getElementById("detail-modal");
+
+      if (!wasSettled && nowSettled) {
+        closeModal("detail-modal");
+        detailDebtId = null;
+        currentView = "history";
+        saveAppData();
+        render();
+        return;
+      }
+
+      render();
+
+      if (detailDebtId === debtId && detailModal.classList.contains("modal--open")) {
+        openDetailModal(debtId);
+      }
+    }
+
+    function deleteDebt(debtId) {
+      debts = debts.filter(function(d) { return d.id !== debtId; });
+      saveDebts();
+      render();
+    }
+
+    function deleteNote(noteId) {
+      notes = notes.filter(function(n) { return n.id !== noteId; });
+      saveNotes();
+      render();
+    }
+
+    function validateNote(note, errorElementId) {
+      clearFormError(errorElementId);
+
+      if (!note.title || note.title.trim() === "") {
+        showFormError(errorElementId, "Please enter a note title.");
+        return false;
+      }
+      if (!note.content || note.content.trim() === "") {
+        showFormError(errorElementId, "Please enter note content.");
+        return false;
+      }
+      return true;
+    }
+
+    function formatDateDisplay(isoStr) {
+      if (!isoStr) return "";
+      const date = new Date(isoStr);
+      return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    }
+
+    // ========== UI RENDER FUNCTIONS ==========
+    function render() {
+      updateMainNav();
+      updateFab();
+      if (currentView === "debts") {
+        renderDashboard();
+        renderDebtList();
+        updateGroupingToggle();
+      } else {
+        const selectionBar = document.getElementById("due-selection-bar");
+        if (selectionBar) selectionBar.hidden = true;
+        if (currentView === "history") {
+          renderHistoryList();
+        } else if (currentView === "notes") {
+          renderNotesList();
+        } else if (currentView === "settings") {
+          renderSettings();
+        }
+      }
+    }
+
+    function updateMainNav() {
+      const debtsBtn = document.getElementById("nav-debts-btn");
+      const historyBtn = document.getElementById("nav-history-btn");
+      const notesBtn = document.getElementById("nav-notes-btn");
+      const settingsBtn = document.getElementById("nav-settings-btn");
+      const debtsView = document.getElementById("debts-view");
+      const historyView = document.getElementById("history-view");
+      const notesView = document.getElementById("notes-view");
+      const settingsView = document.getElementById("settings-view");
+      const groupingControl = document.getElementById("grouping-control");
+
+      debtsBtn.classList.toggle("main-nav__btn--active", currentView === "debts");
+      historyBtn.classList.toggle("main-nav__btn--active", currentView === "history");
+      notesBtn.classList.toggle("main-nav__btn--active", currentView === "notes");
+      settingsBtn.classList.toggle("main-nav__btn--active", currentView === "settings");
+      debtsView.classList.toggle("view-section--active", currentView === "debts");
+      historyView.classList.toggle("view-section--active", currentView === "history");
+      notesView.classList.toggle("view-section--active", currentView === "notes");
+      settingsView.classList.toggle("view-section--active", currentView === "settings");
+      groupingControl.style.display = currentView === "debts" ? "flex" : "none";
+    }
+
+    function updateFab() {
+      const fab = document.getElementById("fab-btn");
+      if (currentView === "debts") {
+        fab.style.display = "";
+        fab.textContent = "+ Add Debt";
+        fab.setAttribute("aria-label", "Add new debt");
+      } else if (currentView === "notes") {
+        fab.style.display = "";
+        fab.textContent = "+ Add Note";
+        fab.setAttribute("aria-label", "Add new note");
+      } else {
+        fab.style.display = "none";
+      }
+    }
+
+    function renderHistoryList() {
+      const listEl = document.getElementById("history-list");
+      const settled = getSettledDebts();
+
+      if (settled.length === 0) {
+        listEl.innerHTML =
+          '<div class="history-header">' +
+            '<div class="history-header__title">Settled Debts</div>' +
+            '<div class="history-header__desc">Fully paid debts will appear here automatically.</div>' +
+          '</div>';
+        return;
+      }
+
+      listEl.innerHTML =
+        '<div class="history-header">' +
+          '<div class="history-header__title">Settled Debts</div>' +
+          '<div class="history-header__desc">' + settled.length + ' debt' + (settled.length === 1 ? '' : 's') + ' fully paid</div>' +
+        '</div>' +
+        settled.map(function(debt) {
+          const totalPaid = calculateTotalPaid(debt);
+          return (
+            '<button type="button" class="history-card" data-debt-id="' + debt.id + '">' +
+              '<span class="history-card__badge">Settled ✓</span>' +
+              '<div class="history-card__header">' +
+                '<div>' +
+                  '<div class="history-card__name">' + escapeHtml(debt.name) + '</div>' +
+                  '<div class="history-card__type">' + getDebtTypeLabel(debt.type) + '</div>' +
+                '</div>' +
+                '<div class="history-card__amount">' + formatCurrency(totalPaid) + '</div>' +
+              '</div>' +
+              '<div class="history-card__meta">Settled on ' + formatDateDisplay(debt.settledAt) + '</div>' +
+            '</button>'
+          );
+        }).join("");
+    }
+
+    function renderSettings() {
+      const el = document.getElementById("settings-content");
+      el.innerHTML =
+        '<div class="settings-card">' +
+          '<div class="settings-card__title">Payday</div>' +
+          '<div class="settings-card__desc">Payments due before this day each month will show an orange warning tag. Default is the 22nd.</div>' +
+          '<div class="settings-row">' +
+            '<div class="form-group">' +
+              '<label for="settings-payday">Day of month (1–31)</label>' +
+              '<input type="number" id="settings-payday" min="1" max="31" value="' + payday + '">' +
+            '</div>' +
+            '<button type="button" class="btn btn--primary" id="save-payday-btn">Save</button>' +
+          '</div>' +
+          '<div class="form-error" id="settings-form-error" role="alert"></div>' +
+        '</div>' +
+'<div class="settings-card">' +
+  '<div class="settings-card__title">About</div>' +
+  '<div class="settings-card__desc">Debt Tracker — personal PWA for tracking debts, installments, and notes. All data stays on your device.</div>' +
+  '<div class="settings-card__meta">Version ' + APP_VERSION + '</div>' +
+  '<div class="settings-card__meta">' +
+    'Made by <a href="https://github.com/RenNanase" target="_blank" rel="noopener noreferrer">@dhzrnaaa</a> on GitHub' +
+  '</div>' +
+'</div>'
+
+      document.getElementById("save-payday-btn").addEventListener("click", function() {
+        const val = parseInt(document.getElementById("settings-payday").value, 10);
+        clearFormError("settings-form-error");
+        if (!val || val < 1 || val > 31) {
+          showFormError("settings-form-error", "Please enter a valid day between 1 and 31.");
+          return;
+        }
+        payday = val;
+        saveAppData();
+        render();
+      });
+    }
+
+    function renderNotesList() {
+      const listEl = document.getElementById("notes-list");
+      const sortedNotes = notes.slice().sort(function(a, b) {
+        return new Date(b.updatedAt) - new Date(a.updatedAt);
+      });
+
+      if (sortedNotes.length === 0) {
+        listEl.innerHTML =
+          '<div class="empty-state">' +
+            '<div class="empty-state__icon">📝</div>' +
+            '<p class="empty-state__text">No notes yet</p>' +
+            '<p>Tap "+ Add Note" to create one</p>' +
+          '</div>';
+        return;
+      }
+
+      listEl.innerHTML = sortedNotes.map(function(note) {
+        return (
+          '<button type="button" class="note-card" data-note-id="' + note.id + '">' +
+            '<div class="note-card__title">' + escapeHtml(note.title) + '</div>' +
+            '<div class="note-card__preview">' + escapeHtml(note.content) + '</div>' +
+            '<div class="note-card__date">Updated ' + formatDateDisplay(note.updatedAt) + '</div>' +
+          '</button>'
+        );
+      }).join("");
+    }
+
+    function renderDashboard() {
+      const dashboard = document.getElementById("dashboard");
+      const totalRemaining = calculateTotalRemaining();
+      const activeCount = getActiveDebtsCount();
+      const nextPayment = getNextPaymentDate();
+      const nextPaymentAmount = getNextPaymentAmount();
+      const debtFreeDate = getDebtFreeDate();
+      const beforePaydayCount = countUnpaidBeforePayday();
+      const overdueCount = countOverdue();
+      const currentMonthDue = calculateCurrentMonthDue();
+
+      dashboard.innerHTML =
+        '<div class="dashboard__card dashboard__card--wide">' +
+          '<div class="dashboard__label">Total Remaining</div>' +
+          '<div class="dashboard__value dashboard__value--danger">' + formatCurrency(totalRemaining) + '</div>' +
+        '</div>' +
+        '<div class="dashboard__card dashboard__card--wide">' +
+          '<div class="dashboard__label">Due This Month</div>' +
+          '<div class="dashboard__value dashboard__value--primary">' + formatCurrency(currentMonthDue) + '</div>' +
+        '</div>' +
+        '<div class="dashboard__card">' +
+          '<div class="dashboard__label">Active Debts</div>' +
+          '<div class="dashboard__value">' + activeCount + '</div>' +
+        '</div>' +
+        '<div class="dashboard__card">' +
+          '<div class="dashboard__label">Debt-Free Date</div>' +
+          '<div class="dashboard__value dashboard__value--success">' +
+            (debtFreeDate ? formatInstallmentDateShort(debtFreeDate) : "—") +
+          '</div>' +
+        '</div>' +
+        '<div class="dashboard__card dashboard__card--next-payment">' +
+          '<div class="dashboard__label">Next Payment</div>' +
+          '<div class="dashboard__value">' +
+            (nextPayment ? formatCurrency(nextPaymentAmount) : "—") +
+          '</div>' +
+          (nextPayment ?
+            '<div class="dashboard__subvalue">' + formatInstallmentDateShort(nextPayment) + '</div>' :
+            '') +
+          (beforePaydayCount > 0 ?
+            '<div style="margin-top:6px">' + renderWarningTag() + ' <span style="font-size:0.75rem;color:var(--text-secondary)">(' + beforePaydayCount + ' this month before payday)</span></div>' :
+            '') +
+        '</div>' +
+        '<div class="dashboard__card">' +
+          '<div class="dashboard__label">Overdue</div>' +
+          '<div class="dashboard__value ' + (overdueCount > 0 ? 'dashboard__value--danger' : '') + '">' + overdueCount + '</div>' +
+        '</div>';
+    }
+
+    function renderDebtList() {
+      const listEl = document.getElementById("debt-list");
+      const activeDebts = getActiveDebts();
+
+      if (activeDebts.length === 0) {
+        listEl.innerHTML = "";
+        return;
+      }
+
+      if (groupingMode === "type") {
+        listEl.innerHTML = renderAlertBanners() + renderTypeGroups();
+      } else {
+        if (pruneSelectedDueItems()) {
+          updateDueSelectionBar();
+        }
+        listEl.innerHTML = renderAlertBanners() + renderDueDateGroups();
+        updateDueSelectionBar();
+      }
+    }
+
+    function renderAlertBanners() {
+      let html = "";
+      const overdueCount = countOverdue();
+      const beforePaydayCount = countUnpaidBeforePayday();
+
+      if (overdueCount > 0) {
+        html +=
+          '<div class="overdue-banner">' +
+            '<span>●</span>' +
+            '<span><span class="overdue-banner__count">' + overdueCount + '</span> overdue payment' +
+            (overdueCount === 1 ? '' : 's') + ' — please settle these as soon as possible.</span>' +
+          '</div>';
+      }
+
+      if (beforePaydayCount > 0) {
+        html += renderPaydayBanner();
+      }
+
+      return html;
+    }
+
+    function renderPaydayBanner() {
+      const count = countUnpaidBeforePayday();
+      if (count === 0) return "";
+      return (
+        '<div class="payday-banner">' +
+          '<span>⚠</span>' +
+          '<span><span class="payday-banner__count">' + count + '</span> payment' + (count === 1 ? '' : 's') +
+          ' due before your payday (' + getOrdinal(payday) + ') this month — pay attention to these debts.</span>' +
+        '</div>'
+      );
+    }
+
+    function renderTypeGroups() {
+      const activeDebts = getActiveDebts();
+      const groups = groupByType(activeDebts);
+      if (activeDebts.length === 0) return "";
+      if (groups.length === 0) return "";
+
+      return groups.map(function(group) {
+        const cards = group.debts.map(function(debt) {
+          const remaining = calculateRemainingBalance(debt);
+          const nextDue = getNextPaymentForDebt(debt);
+          const nextDueAmount = getNextPaymentAmountForDebt(debt);
+          const showWarning = debtHasBeforePaydayWarning(debt);
+          const showOverdue = debtHasOverdue(debt);
+          let tags = "";
+          if (showOverdue) tags += renderOverdueTag();
+          if (showWarning) tags += renderWarningTag();
+          return (
+            '<button type="button" class="debt-card" data-debt-id="' + debt.id + '">' +
+              '<div class="debt-card__header">' +
+                '<div>' +
+                  '<div class="debt-card__name">' + escapeHtml(debt.name) + '</div>' +
+                  '<div class="debt-card__type">' + getDebtTypeLabel(debt.type) + '</div>' +
+                '</div>' +
+                '<div class="debt-card__balance">' + formatCurrency(remaining) + '</div>' +
+              '</div>' +
+              '<div class="debt-card__meta">' +
+                '<span>' + (remaining > 0 ?
+                  'Next: ' + (nextDue ? formatCurrency(nextDueAmount) + ' · ' + formatInstallmentDateShort(nextDue) : '—') :
+                  'Paid off ✓') + '</span>' +
+                '<span>' + debt.installments.filter(function(i) { return !i.paid; }).length + ' unpaid</span>' +
+              '</div>' +
+              (tags ? '<div class="debt-card__tags">' + tags + '</div>' : '') +
+            '</button>'
+          );
+        }).join("");
+
+        return '<h3 class="group-header">' + group.label + '</h3>' + cards;
+      }).join("");
+    }
+
+    function renderDueDateGroups() {
+      const activeDebts = getActiveDebts();
+      const groups = groupByDueDate(activeDebts);
+
+      if (activeDebts.length === 0) return "";
+      if (groups.length === 0) {
+        return '<div class="empty-state"><p>No unpaid installments — you\'re all caught up! 🎉</p></div>';
+      }
+
+      return groups.map(function(group) {
+        const items = group.items.map(function(item) {
+          const dueDate = getInstallmentDate(item.installment);
+          const tags = renderInstallmentTags(dueDate, false);
+          const selectionKey = getDueItemKey(item.debt.id, item.installmentIndex);
+          const isSelected = !!selectedDueItems[selectionKey];
+          return (
+            '<button type="button" class="due-item' +
+              (isOverdue(dueDate) ? ' due-item--overdue' : '') +
+              (isSelected ? ' due-item--selected' : '') + '" ' +
+              'data-debt-id="' + item.debt.id + '" ' +
+              'data-installment-index="' + item.installmentIndex + '" ' +
+              'data-amount="' + item.installment.amount + '" ' +
+              'aria-pressed="' + (isSelected ? 'true' : 'false') + '" ' +
+              'aria-label="Select ' + escapeHtml(item.debt.name) + ' payment of ' + formatCurrency(item.installment.amount) + '">' +
+              '<span class="due-item__tick" aria-hidden="true">' +
+                '<svg width="14" height="14" viewBox="0 0 14 14" fill="none">' +
+                  '<path d="M2.5 7.2L5.8 10.5L11.5 3.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+                '</svg>' +
+              '</span>' +
+              '<div class="due-item__info">' +
+                '<div class="due-item__name">' + escapeHtml(item.debt.name) + '</div>' +
+                '<div class="due-item__type">' + getDebtTypeLabel(item.debt.type) + '</div>' +
+                (tags ? '<div class="due-item__tags">' + tags + '</div>' : '') +
+              '</div>' +
+              '<div class="due-item__amount">' + formatCurrency(item.installment.amount) + '</div>' +
+            '</button>'
+          );
+        }).join("");
+
+        let headerTags = "";
+        if (group.overdue) headerTags += renderOverdueTag();
+        if (group.beforePayday) headerTags += renderWarningTag();
+        return '<h3 class="group-header">' + group.label + (headerTags ? ' ' + headerTags : '') + '</h3>' + items;
+      }).join("");
+    }
+
+    function updateGroupingToggle() {
+      const typeBtn = document.getElementById("group-type-btn");
+      const dueDateBtn = document.getElementById("group-duedate-btn");
+
+      typeBtn.classList.toggle("segmented-control__btn--active", groupingMode === "type");
+      dueDateBtn.classList.toggle("segmented-control__btn--active", groupingMode === "dueDate");
+      typeBtn.setAttribute("aria-selected", groupingMode === "type" ? "true" : "false");
+      dueDateBtn.setAttribute("aria-selected", groupingMode === "dueDate" ? "true" : "false");
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // ========== MODAL HANDLERS ==========
+    function openModal(modalId) {
+      document.getElementById(modalId).classList.add("modal--open");
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove("modal--open");
+      if (modalId === "debt-modal") {
+        editingDebtId = null;
+        clearFormError("debt-form-error");
+      }
+    }
+
+    function populateTypeSelect() {
+      const select = document.getElementById("debt-type");
+      select.innerHTML = DEBT_TYPES.map(function(t) {
+        return '<option value="' + t.value + '">' + t.label + '</option>';
+      }).join("");
+    }
+
+    function renderFormInstallments() {
+      if (installmentMode === "fixed") {
+        renderFixedInstallmentsPreview();
+        return;
+      }
+
+      const container = document.getElementById("form-installments");
+      container.innerHTML = formInstallments.map(function(inst, index) {
+        const dueDate = inst.date || inst.month || "";
+        const dateReadonly = index > 0;
+        return (
+          '<div class="installment-item' + (inst.paid ? ' installment-item--paid' : '') + '">' +
+            '<input type="date" value="' + dueDate + '" data-index="' + index + '" data-field="date"' +
+              (dateReadonly ? ' readonly tabindex="-1"' : '') +
+              ' aria-label="Installment due date ' + (index + 1) + '">' +
+            '<input type="number" value="' + (inst.amount || '') + '" min="0.01" step="0.01" placeholder="Amount" data-index="' + index + '" data-field="amount" aria-label="Installment amount ' + (index + 1) + '">' +
+            (inst.paid ? '<span style="color:var(--success);font-size:0.75rem;font-weight:600">Paid</span>' : '') +
+            renderInstallmentTags(dueDate, inst.paid) +
+            '<button type="button" class="installment-item__remove" data-remove-index="' + index + '" aria-label="Remove installment ' + (index + 1) + '">&times;</button>' +
+          '</div>'
+        );
+      }).join("");
+      updateCustomInstallmentSummary();
+    }
+
+    function openAddDebtModal() {
+      editingDebtId = null;
+      formInstallments = [{ date: "", amount: 0, paid: false }];
+      installmentMode = "custom";
+      clearFormError("debt-form-error");
+
+      document.getElementById("debt-modal-title").textContent = "Add Debt";
+      document.getElementById("debt-name").value = "";
+      document.getElementById("debt-type").value = "loan";
+      document.getElementById("debt-total").value = "";
+      document.getElementById("debt-total").readOnly = false;
+      document.getElementById("fixed-months").value = "";
+      document.getElementById("fixed-monthly").value = "";
+      document.getElementById("fixed-start").value = getDefaultFirstPaymentDate();
+      document.getElementById("delete-debt-btn").style.display = "none";
+      document.getElementById("installment-mode-control").style.display = "flex";
+
+      setInstallmentMode("custom");
+      renderFormInstallments();
+      bindFormInstallmentListeners();
+      openModal("debt-modal");
+    }
+
+    function openEditDebtModal(debtId) {
+      const debt = debts.find(function(d) { return d.id === debtId; });
+      if (!debt || isDebtSettled(debt)) return;
+
+      editingDebtId = debtId;
+      installmentMode = "custom";
+      clearFormError("debt-form-error");
+      formInstallments = debt.installments.map(function(inst) {
+        return { date: getInstallmentDate(inst), amount: inst.amount, paid: inst.paid };
+      });
+
+      document.getElementById("debt-modal-title").textContent = "Edit Debt";
+      document.getElementById("debt-name").value = debt.name;
+      document.getElementById("debt-type").value = debt.type;
+      const syncedTotal = syncDebtTotalForEdit(formInstallments, debt.totalAmount || 0);
+      document.getElementById("debt-total").value = syncedTotal > 0 ? syncedTotal : "";
+      document.getElementById("debt-total").readOnly = false;
+      document.getElementById("delete-debt-btn").style.display = "block";
+      document.getElementById("installment-mode-control").style.display = "none";
+      document.getElementById("fixed-installment-fields").style.display = "none";
+      document.getElementById("fixed-installment-preview-group").style.display = "none";
+      document.getElementById("custom-installment-fields").style.display = "block";
+
+      renderFormInstallments();
+      bindFormInstallmentListeners();
+      closeModal("detail-modal");
+      openModal("debt-modal");
+    }
+
+    function openDetailModal(debtId) {
+      const debt = debts.find(function(d) { return d.id === debtId; });
+      if (!debt) return;
+
+      detailDebtId = debtId;
+      const remaining = calculateRemainingBalance(debt);
+      const lastPayment = calculateLastPaymentDate(debt);
+      const nextDue = getNextPaymentForDebt(debt);
+      const nextDueAmount = getNextPaymentAmountForDebt(debt);
+
+      document.getElementById("detail-modal-title").textContent = debt.name;
+
+      const sortedInstallments = debt.installments
+        .map(function(inst, index) { return { inst: inst, index: index }; })
+        .sort(function(a, b) {
+          return getInstallmentDate(a.inst).localeCompare(getInstallmentDate(b.inst));
+        });
+
+      const installmentsHtml = sortedInstallments.map(function(item) {
+        const inst = item.inst;
+        const dueDate = getInstallmentDate(inst);
+        const tags = renderInstallmentTags(dueDate, inst.paid);
+        const settled = isDebtSettled(debt);
+
+        if (settled) {
+          return (
+            '<div class="detail-installment detail-installment--paid">' +
+              '<div class="detail-installment__date-row">' +
+                '<div class="detail-installment__month">' + formatInstallmentDate(dueDate) + '</div>' +
+              '</div>' +
+              '<div class="detail-installment__amount">' + formatCurrency(inst.amount) + '</div>' +
+              '<span class="detail-installment__paid-label">Paid</span>' +
+            '</div>'
+          );
+        }
+
+        return (
+          '<div class="detail-installment' + (inst.paid ? ' detail-installment--paid' : '') + (isOverdue(dueDate) && !inst.paid ? ' detail-installment--overdue' : '') + '">' +
+            '<input type="checkbox" ' + (inst.paid ? 'checked' : '') +
+              ' data-debt-id="' + debt.id + '" data-installment-index="' + item.index + '" ' +
+              'aria-label="Mark ' + formatInstallmentDate(dueDate) + ' as paid">' +
+            '<div class="detail-installment__date-row">' +
+              '<div class="detail-installment__month">' + formatInstallmentDate(dueDate) + '</div>' +
+              tags +
+            '</div>' +
+            '<div class="detail-installment__amount">' + formatCurrency(inst.amount) + '</div>' +
+            (inst.paid ? '<span class="detail-installment__paid-label">Paid</span>' : '') +
+          '</div>'
+        );
+      }).join("");
+
+      let alertHtml = "";
+      if (isDebtSettled(debt)) {
+        alertHtml += '<div class="detail-settled-badge">Settled ✓ — ' + formatDateDisplay(debt.settledAt) + '</div>';
+      } else {
+        if (debtHasOverdue(debt)) {
+          alertHtml += '<div style="margin-bottom:12px">' + renderOverdueTag() + ' <span style="font-size:0.8125rem;color:var(--text-secondary)">Has overdue payment(s)</span></div>';
+        }
+        if (debtHasBeforePaydayWarning(debt)) {
+          alertHtml += '<div style="margin-bottom:12px">' + renderWarningTag() + ' <span style="font-size:0.8125rem;color:var(--text-secondary)">Has payment(s) due before payday (' + getOrdinal(payday) + ')</span></div>';
+        }
+      }
+
+      const totalPaid = calculateTotalPaid(debt);
+      const statsHtml = isDebtSettled(debt) ?
+        '<div style="display:flex;justify-content:space-between;margin-bottom:16px;gap:8px">' +
+          '<div><span style="font-size:0.75rem;color:var(--text-secondary)">TOTAL PAID</span><br>' +
+          '<strong style="color:var(--history-pink);font-size:1.25rem">' + formatCurrency(totalPaid) + '</strong></div>' +
+          '<div style="text-align:center"><span style="font-size:0.75rem;color:var(--text-secondary)">INSTALLMENTS</span><br>' +
+          '<strong>' + debt.installments.length + '</strong></div>' +
+          '<div style="text-align:right"><span style="font-size:0.75rem;color:var(--text-secondary)">SETTLED</span><br>' +
+          '<strong style="color:var(--history-pink)">' + formatDateDisplay(debt.settledAt) + '</strong></div>' +
+        '</div>' :
+        '<div style="display:flex;justify-content:space-between;margin-bottom:16px;gap:8px">' +
+          '<div><span style="font-size:0.75rem;color:var(--text-secondary)">REMAINING</span><br>' +
+          '<strong style="color:var(--danger);font-size:1.25rem">' + formatCurrency(remaining) + '</strong></div>' +
+          '<div style="text-align:center"><span style="font-size:0.75rem;color:var(--text-secondary)">NEXT PAYMENT</span><br>' +
+          '<strong>' + (nextDue ? formatCurrency(nextDueAmount) + '<br><span style="font-size:0.8125rem;color:var(--text-secondary)">' + formatInstallmentDateShort(nextDue) + '</span>' : '—') + '</strong></div>' +
+          '<div style="text-align:right"><span style="font-size:0.75rem;color:var(--text-secondary)">DEBT-FREE</span><br>' +
+          '<strong style="color:var(--success)">' + (lastPayment ? formatInstallmentDateShort(lastPayment) : 'Paid off') + '</strong></div>' +
+        '</div>';
+
+      document.getElementById("detail-content").innerHTML =
+        '<p style="margin-bottom:12px;color:var(--text-secondary)">' + getDebtTypeLabel(debt.type) + '</p>' +
+        alertHtml +
+        statsHtml +
+        '<h3 style="font-size:0.8125rem;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.04em">Installments</h3>' +
+        installmentsHtml;
+
+      const detailActions = document.querySelector("#detail-modal .detail-actions");
+      const editBtn = document.getElementById("edit-from-detail-btn");
+      const deleteBtn = document.getElementById("delete-from-detail-btn");
+      const doneBtn = detailActions.querySelector("[data-close-modal='detail-modal']");
+
+      if (isDebtSettled(debt)) {
+        detailActions.style.display = "";
+        editBtn.style.display = "none";
+        deleteBtn.style.display = "";
+        if (doneBtn) doneBtn.style.display = "";
+      } else {
+        detailActions.style.display = "";
+        editBtn.style.display = "";
+        deleteBtn.style.display = "";
+        if (doneBtn) doneBtn.style.display = "";
+      }
+
+      openModal("detail-modal");
+    }
+
+    function openDeleteModal(type, id, name) {
+      deleteTarget = { type: type, id: id };
+      document.getElementById("delete-modal-title").textContent =
+        type === "debt" ? "Delete Debt?" : "Delete Note?";
+      document.getElementById("delete-item-name").textContent = name;
+      closeModal("debt-modal");
+      closeModal("detail-modal");
+      closeModal("note-modal");
+      openModal("delete-modal");
+    }
+
+    function openAddNoteModal() {
+      editingNoteId = null;
+      clearFormError("note-form-error");
+      document.getElementById("note-modal-title").textContent = "Add Note";
+      document.getElementById("note-title").value = "";
+      document.getElementById("note-content").value = "";
+      document.getElementById("delete-note-btn").style.display = "none";
+      openModal("note-modal");
+    }
+
+    function openEditNoteModal(noteId) {
+      const note = notes.find(function(n) { return n.id === noteId; });
+      if (!note) return;
+
+      editingNoteId = noteId;
+      clearFormError("note-form-error");
+      document.getElementById("note-modal-title").textContent = "Edit Note";
+      document.getElementById("note-title").value = note.title;
+      document.getElementById("note-content").value = note.content;
+      document.getElementById("delete-note-btn").style.display = "block";
+      openModal("note-modal");
+    }
+
+    function handleSaveNote(e) {
+      e.preventDefault();
+
+      const noteData = {
+        title: document.getElementById("note-title").value.trim(),
+        content: document.getElementById("note-content").value.trim()
+      };
+
+      if (!validateNote(noteData, "note-form-error")) return;
+
+      if (editingNoteId) {
+        const note = notes.find(function(n) { return n.id === editingNoteId; });
+        if (note) {
+          note.title = noteData.title;
+          note.content = noteData.content;
+          note.updatedAt = new Date().toISOString();
+        }
+      } else {
+        const newNote = createDefaultNote();
+        newNote.title = noteData.title;
+        newNote.content = noteData.content;
+        notes.push(newNote);
+      }
+
+      saveNotes();
+      closeModal("note-modal");
+      render();
+    }
+
+    function handleSaveDebt(e) {
+      e.preventDefault();
+      clearFormError("debt-form-error");
+
+      if (installmentMode === "fixed" && !editingDebtId) {
+        updateFixedPlan();
+        const monthly = parseFloat(document.getElementById("fixed-monthly").value) || 0;
+        const months = parseInt(document.getElementById("fixed-months").value, 10);
+        const start = document.getElementById("fixed-start").value;
+
+        if (!monthly || monthly <= 0) {
+          showFormError("debt-form-error", "Please enter a valid monthly amount.");
+          return;
+        }
+        if (!start) {
+          showFormError("debt-form-error", "Please select the first payment date.");
+          return;
+        }
+        if (!months || months <= 0) {
+          showFormError("debt-form-error", "Please enter a valid number of months.");
+          return;
+        }
+      }
+
+      const debtData = {
+        name: document.getElementById("debt-name").value.trim(),
+        type: document.getElementById("debt-type").value,
+        totalAmount: parseFloat(document.getElementById("debt-total").value) || 0,
+        installments: getDebtFormInstallments()
+      };
+
+      if (!validateDebt(debtData, "debt-form-error", {
+        requireTotalMatch: installmentMode === "custom" || !!editingDebtId
+      })) return;
+
+      if (editingDebtId) {
+        const debt = debts.find(function(d) { return d.id === editingDebtId; });
+        if (debt) {
+          debt.name = debtData.name;
+          debt.type = debtData.type;
+          debt.totalAmount = debtData.totalAmount;
+          debt.installments = debtData.installments;
+          debt.updatedAt = new Date().toISOString();
+          updateDebtSettlementStatus(debt);
+        }
+      } else {
+        const newDebt = createDefaultDebt();
+        newDebt.name = debtData.name;
+        newDebt.type = debtData.type;
+        newDebt.totalAmount = debtData.totalAmount;
+        newDebt.installments = debtData.installments;
+        updateDebtSettlementStatus(newDebt);
+        debts.push(newDebt);
+      }
+
+      saveDebts();
+      closeModal("debt-modal");
+      render();
+    }
+
+    // ========== EVENT LISTENERS ==========
+    function setupStaticListeners() {
+      document.getElementById("debt-list").addEventListener("click", function(e) {
+        const dueItem = e.target.closest(".due-item[data-debt-id]");
+        if (dueItem) {
+          const debtId = dueItem.getAttribute("data-debt-id");
+          const installmentIndex = parseInt(dueItem.getAttribute("data-installment-index"), 10);
+          const amount = parseFloat(dueItem.getAttribute("data-amount")) || 0;
+          toggleDueItemSelection(debtId, installmentIndex, amount);
+          dueItem.classList.toggle("due-item--selected");
+          dueItem.setAttribute("aria-pressed", dueItem.classList.contains("due-item--selected") ? "true" : "false");
+          return;
+        }
+
+        const card = e.target.closest(".debt-card[data-debt-id]");
+        if (card) {
+          openDetailModal(card.getAttribute("data-debt-id"));
+        }
+      });
+
+      document.getElementById("clear-due-selection-btn").addEventListener("click", clearDueItemSelection);
+
+      document.getElementById("detail-content").addEventListener("change", function(e) {
+        if (e.target.matches("input[type='checkbox'][data-debt-id]")) {
+          markInstallmentPaid(
+            e.target.getAttribute("data-debt-id"),
+            parseInt(e.target.getAttribute("data-installment-index"), 10)
+          );
+        }
+      });
+
+      document.getElementById("history-list").addEventListener("click", function(e) {
+        const card = e.target.closest(".history-card[data-debt-id]");
+        if (card) {
+          openDetailModal(card.getAttribute("data-debt-id"));
+        }
+      });
+
+      document.getElementById("notes-list").addEventListener("click", function(e) {
+        const card = e.target.closest(".note-card[data-note-id]");
+        if (card) {
+          openEditNoteModal(card.getAttribute("data-note-id"));
+        }
+      });
+
+      document.getElementById("fab-btn").addEventListener("click", function() {
+        if (currentView === "debts") {
+          openAddDebtModal();
+        } else {
+          openAddNoteModal();
+        }
+      });
+
+      document.getElementById("nav-debts-btn").addEventListener("click", function() {
+        currentView = "debts";
+        saveAppData();
+        render();
+      });
+
+      document.getElementById("nav-history-btn").addEventListener("click", function() {
+        currentView = "history";
+        saveAppData();
+        render();
+      });
+
+      document.getElementById("nav-notes-btn").addEventListener("click", function() {
+        currentView = "notes";
+        saveAppData();
+        render();
+      });
+
+      document.getElementById("nav-settings-btn").addEventListener("click", function() {
+        currentView = "settings";
+        saveAppData();
+        render();
+      });
+
+      document.getElementById("group-type-btn").addEventListener("click", function() {
+        groupingMode = "type";
+        selectedDueItems = {};
+        saveDebts();
+        render();
+      });
+
+      document.getElementById("group-duedate-btn").addEventListener("click", function() {
+        groupingMode = "dueDate";
+        saveDebts();
+        render();
+      });
+
+      document.getElementById("debt-form").addEventListener("submit", handleSaveDebt);
+      document.getElementById("note-form").addEventListener("submit", handleSaveNote);
+
+      document.getElementById("mode-custom-btn").addEventListener("click", function() {
+        setInstallmentMode("custom");
+        if (formInstallments.length === 0) {
+          formInstallments = [{ date: "", amount: 0, paid: false }];
+        }
+        renderFormInstallments();
+        bindFormInstallmentListeners();
+      });
+
+      document.getElementById("mode-fixed-btn").addEventListener("click", function() {
+        setInstallmentMode("fixed");
+      });
+
+      document.getElementById("fixed-months").addEventListener("input", updateFixedPlan);
+      document.getElementById("fixed-monthly").addEventListener("input", updateFixedPlan);
+      document.getElementById("fixed-start").addEventListener("change", updateFixedPlan);
+      document.getElementById("debt-total").addEventListener("input", updateCustomInstallmentSummary);
+
+      document.getElementById("add-installment-btn").addEventListener("click", function() {
+        formInstallments.push({ date: getNextCustomDate(formInstallments), amount: 0, paid: false });
+        renderFormInstallments();
+        bindFormInstallmentListeners();
+      });
+
+      document.getElementById("delete-debt-btn").addEventListener("click", function() {
+        if (editingDebtId) {
+          const debt = debts.find(function(d) { return d.id === editingDebtId; });
+          if (debt) openDeleteModal("debt", editingDebtId, debt.name);
+        }
+      });
+
+      document.getElementById("delete-from-detail-btn").addEventListener("click", function() {
+        if (detailDebtId) {
+          const debt = debts.find(function(d) { return d.id === detailDebtId; });
+          if (debt) openDeleteModal("debt", detailDebtId, debt.name);
+        }
+      });
+
+      document.getElementById("delete-note-btn").addEventListener("click", function() {
+        if (editingNoteId) {
+          const note = notes.find(function(n) { return n.id === editingNoteId; });
+          if (note) openDeleteModal("note", editingNoteId, note.title);
+        }
+      });
+
+      document.getElementById("confirm-delete-btn").addEventListener("click", function() {
+        if (!deleteTarget) return;
+
+        if (deleteTarget.type === "debt") {
+          deleteDebt(deleteTarget.id);
+          detailDebtId = null;
+          editingDebtId = null;
+        } else if (deleteTarget.type === "note") {
+          deleteNote(deleteTarget.id);
+          editingNoteId = null;
+        }
+
+        deleteTarget = null;
+        closeModal("delete-modal");
+      });
+
+      document.getElementById("edit-from-detail-btn").addEventListener("click", function() {
+        if (detailDebtId) openEditDebtModal(detailDebtId);
+      });
+
+      document.querySelectorAll("[data-close-modal]").forEach(function(el) {
+        el.addEventListener("click", function() {
+          closeModal(el.getAttribute("data-close-modal"));
+        });
+      });
+
+      bindFormInstallmentListeners();
+    }
+
+    function bindFormInstallmentListeners() {
+      if (installmentMode === "fixed") return;
+
+      document.querySelectorAll("#form-installments input[data-field]").forEach(function(input) {
+        function syncInstallmentField() {
+          const index = parseInt(input.getAttribute("data-index"), 10);
+          const field = input.getAttribute("data-field");
+          if (field === "amount") {
+            formInstallments[index][field] = parseFloat(input.value) || 0;
+            updateCustomInstallmentSummary();
+          } else {
+            formInstallments[index][field] = input.value;
+            if (field === "date" && index === 0) {
+              regenerateCustomDatesFromFirst(formInstallments);
+            }
+          }
+          if (field === "date") {
+            renderFormInstallments();
+            bindFormInstallmentListeners();
+          }
+        }
+
+        input.addEventListener("change", syncInstallmentField);
+        if (input.getAttribute("data-field") === "amount") {
+          input.addEventListener("input", updateCustomInstallmentSummary);
+        }
+      });
+
+      document.querySelectorAll("[data-remove-index]").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          const index = parseInt(btn.getAttribute("data-remove-index"), 10);
+          formInstallments.splice(index, 1);
+          if (index === 0) {
+            regenerateCustomDatesFromFirst(formInstallments);
+          }
+          renderFormInstallments();
+          bindFormInstallmentListeners();
+        });
+      });
+    }
+
+    // ========== SERVICE WORKER ==========
+    let swRegistration = null;
+    let swRefreshing = false;
+    let pendingContentUpdate = false;
+
+    function showUpdateBanner() {
+      const banner = document.getElementById("update-banner");
+      if (banner) banner.classList.add("update-banner--visible");
+    }
+
+    function hideUpdateBanner() {
+      const banner = document.getElementById("update-banner");
+      if (banner) banner.classList.remove("update-banner--visible");
+    }
+
+    function handleWaitingServiceWorker(registration) {
+      if (!registration || !registration.waiting) return;
+
+      if (navigator.serviceWorker.controller) {
+        pendingContentUpdate = false;
+        showUpdateBanner();
+        return;
+      }
+
+      registration.waiting.postMessage({ type: "SKIP_WAITING" });
+    }
+
+    function applyAppUpdate() {
+      if (swRegistration && swRegistration.waiting) {
+        swRegistration.waiting.postMessage({ type: "SKIP_WAITING" });
+        return;
+      }
+
+      if (pendingContentUpdate) {
+        window.location.reload();
+      }
+    }
+
+    function checkRemoteAppVersion() {
+      fetch("./version.json?t=" + Date.now(), { cache: "no-store" })
+        .then(function(res) {
+          return res.ok ? res.json() : null;
+        })
+        .then(function(data) {
+          if (!data || !data.version) return;
+          if (compareVersions(APP_VERSION, data.version) < 0) {
+            pendingContentUpdate = true;
+            showUpdateBanner();
+          }
+        })
+        .catch(function() {});
+    }
+
+    function checkForAppUpdate() {
+      if (swRegistration) {
+        swRegistration.update().catch(function(err) {
+          console.warn("Service worker update check failed:", err);
+        });
+      }
+      checkRemoteAppVersion();
+    }
+
+    function registerServiceWorker() {
+      if (!("serviceWorker" in navigator)) {
+        checkRemoteAppVersion();
+        return;
+      }
+
+      navigator.serviceWorker.addEventListener("controllerchange", function() {
+        if (swRefreshing) return;
+        swRefreshing = true;
+        window.location.reload();
+      });
+
+      navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(function(registration) {
+        swRegistration = registration;
+        handleWaitingServiceWorker(registration);
+        checkRemoteAppVersion();
+
+        registration.addEventListener("updatefound", function() {
+          const newWorker = registration.installing;
+          if (!newWorker) return;
+
+          newWorker.addEventListener("statechange", function() {
+            if (newWorker.state === "installed") {
+              handleWaitingServiceWorker(registration);
+            }
+          });
+        });
+      }).catch(function(err) {
+        console.warn("Service worker registration failed:", err);
+        checkRemoteAppVersion();
+      });
+
+      document.getElementById("apply-update-btn").addEventListener("click", applyAppUpdate);
+      document.getElementById("dismiss-update-btn").addEventListener("click", hideUpdateBanner);
+
+      document.addEventListener("visibilitychange", function() {
+        if (document.visibilityState === "visible") {
+          checkForAppUpdate();
+        }
+      });
+
+      window.addEventListener("focus", checkForAppUpdate);
+    }
+
+    // ========== INITIALIZATION ==========
+    const LOADER_MIN_MS = 900;
+    const loaderStartTime = performance.now();
+
+    function setLoaderProgress(percent) {
+      const bar = document.getElementById("app-loader-progress");
+      const safePercent = Math.max(0, Math.min(100, percent));
+      if (bar) bar.style.width = safePercent + "%";
+    }
+
+    function hideAppLoader() {
+      const elapsed = performance.now() - loaderStartTime;
+      const remaining = Math.max(0, LOADER_MIN_MS - elapsed);
+
+      setTimeout(function() {
+        requestAnimationFrame(function() {
+          requestAnimationFrame(function() {
+            const loader = document.getElementById("app-loader");
+            const app = document.getElementById("app");
+
+            if (app) {
+              app.classList.add("app--ready");
+              app.setAttribute("aria-hidden", "false");
+            }
+
+            if (loader) {
+              loader.classList.add("app-loader--hidden");
+              setTimeout(function() {
+                loader.remove();
+              }, 300);
+            }
+          });
+        });
+      }, remaining);
+    }
+
+    function init() {
+      setLoaderProgress(12);
+      console.log("Debt Tracker v" + APP_VERSION);
+
+      setLoaderProgress(32);
+      populateTypeSelect();
+
+      setLoaderProgress(58);
+      loadDebts();
+
+      setLoaderProgress(78);
+      setupStaticListeners();
+      render();
+
+      setLoaderProgress(92);
+      registerServiceWorker();
+
+      setLoaderProgress(100);
+      hideAppLoader();
+    }
+
+    init();
+  </script>
+</body>
+</html>
